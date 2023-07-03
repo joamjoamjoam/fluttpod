@@ -1,7 +1,6 @@
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
 import 'package:assorted_layout_widgets/assorted_layout_widgets.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 List images = [
   'https://i.pinimg.com/originals/8c/d0/d7/8cd0d722e65ccd87fffb844980977b3c.jpg',
@@ -40,8 +39,16 @@ class IPod extends StatefulWidget {
 
 class IPodState extends State<IPod> {
   final PageController _pageCtrl = PageController(viewportFraction: 1);
-
+  final ItemScrollController _listViewController = ItemScrollController();
+  final ItemPositionsListener itemPositionsListener =
+      ItemPositionsListener.create();
+  final ScrollOffsetController scrollOffsetController =
+      ScrollOffsetController();
+  final ScrollOffsetListener scrollOffsetListener =
+      ScrollOffsetListener.create();
   double currentPage = 0.0;
+  int selectedIndex = 0;
+  int itemsInRootList = 5;
 
   @override
   void initState() {
@@ -101,16 +108,19 @@ class IPodState extends State<IPod> {
                 decoration: const BoxDecoration(
                   color: Colors.grey,
                 ),
-                child: ListView.builder(
-                  controller: _pageCtrl,
+                child: ScrollablePositionedList.builder(
+                  itemScrollController: _listViewController,
+                  itemPositionsListener: itemPositionsListener,
+                  scrollOffsetController: scrollOffsetController,
+                  scrollOffsetListener: scrollOffsetListener,
                   scrollDirection: Axis.vertical,
 
-                  itemCount: 5, //Colors.accents.length,
+                  itemCount: itemsInRootList, //Colors.accents.length,
                   itemBuilder: (context, int currentIdx) {
                     return IpodUIRow(
                       color: Colors.accents[currentIdx],
                       idx: currentIdx,
-                      currentPage: currentPage,
+                      selectedIndex: selectedIndex,
                     );
                   },
                 ),
@@ -147,10 +157,7 @@ class IPodState extends State<IPod> {
                         child: IconButton(
                           icon: const Icon(Icons.fast_forward),
                           iconSize: 40,
-                          onPressed: () => _pageCtrl.animateToPage(
-                              (_pageCtrl.page! + 1).toInt(),
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeIn),
+                          onPressed: () => {},
                         ),
                       ),
                       Container(
@@ -159,10 +166,7 @@ class IPodState extends State<IPod> {
                         child: IconButton(
                           icon: const Icon(Icons.fast_rewind),
                           iconSize: 40,
-                          onPressed: () => _pageCtrl.animateToPage(
-                              (_pageCtrl.page! - 1).toInt(),
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeIn),
+                          onPressed: () => {},
                         ),
                       ),
                       Container(
@@ -256,42 +260,54 @@ class IPodState extends State<IPod> {
         (onTop && panLeft) || (onBottom && panRight) ? xChange : xChange * -1;
 
     // Total computed change with velocity
-    double scrollOffsetChange = (horz + vert) * (d.delta.distance * 0.2);
+    if (d.delta.distance > 0) {
+      double scrollOffsetChange = (horz + vert) * (d.delta.distance * 0.2);
 
-    // Move the page view scroller
-    _pageCtrl.jumpTo(_pageCtrl.offset + scrollOffsetChange);
+      // Move the page view scroller
+      int oldState = selectedIndex;
+      if ((horz + vert) < 0) {
+        selectedIndex = selectedIndex + 1 >= itemsInRootList
+            ? itemsInRootList - 1
+            : selectedIndex + 1;
+      } else {
+        selectedIndex = selectedIndex <= 0 ? 0 : selectedIndex - 1;
+      }
+      debugPrint("Scrolling to Index ${selectedIndex}");
+      if (oldState != selectedIndex) {
+        setState(() {
+          _listViewController.scrollTo(
+              index: selectedIndex,
+              duration: const Duration(milliseconds: 200));
+        });
+      }
+    }
   }
 }
 
 class IpodUIRow extends StatelessWidget {
   final Color color;
   final int idx;
-  final double currentPage;
+  final int selectedIndex;
   const IpodUIRow(
       {super.key,
       required this.color,
       required this.idx,
-      required this.currentPage});
+      required this.selectedIndex});
   @override
   Widget build(BuildContext context) {
-    bool selected = idx == 0;
-    double relativePosition = idx - currentPage;
-    Color itemBGColor = selected ? Colors.blueGrey : Colors.grey;
-    return ListTile(
-      tileColor: itemBGColor,
-      visualDensity: const VisualDensity(vertical: -4),
-      contentPadding: EdgeInsets.symmetric(vertical: -10.0, horizontal: 20),
-      title: const Text(
-        "Music",
-        textAlign: TextAlign.left,
-        style: TextStyle(fontSize: 24),
+    bool selected = idx == selectedIndex;
+    Color itemBGColor = selected ? Colors.red : Colors.grey;
+    return SizedBox(
+      child: Container(
+        height: 30,
+        padding: const EdgeInsets.only(left: 10),
+        color: itemBGColor,
+        child: const Text(
+          "Music",
+          textAlign: TextAlign.left,
+          style: TextStyle(fontSize: 24),
+        ),
       ),
-      dense: true,
-      titleAlignment: ListTileTitleAlignment.center,
-      onTap: () {
-        // Set Selected Page
-        debugPrint("Selecting Page ${idx.toString()}");
-      },
     );
   }
 }
