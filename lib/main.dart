@@ -1,7 +1,10 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:assorted_layout_widgets/assorted_layout_widgets.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'dart:math' as math;
 
 List images = [
   'https://i.pinimg.com/originals/8c/d0/d7/8cd0d722e65ccd87fffb844980977b3c.jpg',
@@ -23,7 +26,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData(brightness: Brightness.dark),
+      theme: ThemeData(
+        brightness: Brightness.dark,
+      ),
       home: const Scaffold(
         body: IPod(),
       ),
@@ -47,19 +52,24 @@ class IPodState extends State<IPod> {
       ScrollOffsetController();
   final ScrollOffsetListener scrollOffsetListener =
       ScrollOffsetListener.create();
-  final List<String> mainMenu = [
-    "Music",
-    "Settings",
+  List<String> mainMenu = [
+    "Music                       >",
+    "Settings                  >",
   ];
 
   double currentPage = 0.0;
   int selectedIndex = 0;
+  double clickWheelDiameter = 280;
+  double clickWheelSelectDiameter = 100;
   bool _listScrollEnabled = true;
   Color backColor = const Color.fromARGB(255, 212, 231, 241);
-  Color selectedColor = Colors.black45;
+  Color selectedColor = const Color.fromARGB(255, 66, 64, 64);
+  Color clickWheelFg = const Color.fromARGB(255, 74, 187, 239);
+  Color clickWheelBg = const Color.fromARGB(255, 228, 226, 226);
 
   @override
   void initState() {
+    clickWheelSelectDiameter = clickWheelDiameter * .30;
     _pageCtrl.addListener(() {
       setState(() {
         currentPage = _pageCtrl.page!;
@@ -71,6 +81,9 @@ class IPodState extends State<IPod> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
+        child: Container(
+      width: 350,
+      color: const Color.fromARGB(255, 51, 175, 233),
       child: Column(
         children: <Widget>[
           // Cover Flow Container
@@ -91,28 +104,45 @@ class IPodState extends State<IPod> {
           //   ),
           // ),
           // Ipod Mini UI
-          Container(height: 160, color: Colors.black),
+          Container(height: 0, color: Colors.black),
           const SizedBox(
-            height: 25,
+            height: 20,
           ),
           Column(
             children: [
               Container(
-                height: 20,
-                width: 374,
+                height: 25,
+                width: 280,
                 decoration: BoxDecoration(color: backColor),
-                child: const Text(
-                  "   ||                        Ipod Mini                        |=|",
-                  style: TextStyle(
-                      decoration: TextDecoration.underline,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                      color: Colors.black),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.pause,
+                      color: Colors.black,
+                    ),
+                    const Text(
+                      "             Ipod Mini            ",
+                      style: TextStyle(
+                          fontFamily: "RedStar",
+                          decoration: TextDecoration.underline,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: Colors.black),
+                    ),
+                    Transform.rotate(
+                      angle: 90 * math.pi / 180,
+                      child: const Icon(
+                        Icons.battery_full_sharp,
+                        color: Colors.black,
+                        size: 30,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Container(
-                height: 300,
-                width: 374,
+                height: 260,
+                width: 280,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: backColor,
@@ -146,77 +176,62 @@ class IPodState extends State<IPod> {
                 GestureDetector(
                   onPanUpdate: _panHandler,
                   child: Container(
-                    height: 300,
-                    width: 300,
-                    decoration: const BoxDecoration(
+                    height: clickWheelDiameter,
+                    width: clickWheelDiameter,
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.black,
+                      color: clickWheelBg,
                     ),
                     child: Stack(children: [
                       Container(
                         alignment: Alignment.topCenter,
-                        margin: const EdgeInsets.only(top: 36),
-                        child: const Text(
+                        margin: const EdgeInsets.only(top: 20),
+                        child: Text(
                           'MENU',
                           style: TextStyle(
-                              fontSize: 24, fontWeight: FontWeight.bold),
+                              fontFamily: "EpsySans",
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: clickWheelFg),
                         ),
                       ),
                       Container(
                         alignment: Alignment.centerRight,
-                        margin: const EdgeInsets.only(right: 30),
+                        margin: const EdgeInsets.only(right: 3),
                         child: IconButton(
-                          icon: const Icon(Icons.fast_forward),
+                          icon: const Icon(CupertinoIcons.forward_end_alt_fill),
                           iconSize: 40,
                           onPressed: () => {},
+                          color: clickWheelFg,
                         ),
                       ),
                       Container(
                         alignment: Alignment.centerLeft,
-                        margin: const EdgeInsets.only(left: 30),
+                        margin: const EdgeInsets.only(left: 3),
                         child: IconButton(
-                          icon: const Icon(Icons.fast_rewind),
+                          icon:
+                              const Icon(CupertinoIcons.backward_end_alt_fill),
                           iconSize: 40,
                           onPressed: () => {},
+                          color: clickWheelFg,
                         ),
                       ),
                       Container(
                           alignment: Alignment.bottomCenter,
-                          margin: const EdgeInsets.only(bottom: 30, right: 10),
+                          margin: const EdgeInsets.only(bottom: 10, right: 10),
                           child: RowSuper(
                             alignment: Alignment.center,
                             children: [
-                              RowSuper(
-                                innerDistance: -10,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () {
-                                      debugPrint("Play/Pause Pressed");
-                                    },
-                                    child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          RowSuper(
-                                            innerDistance: -10,
-                                            children: const [
-                                              Icon(
-                                                Icons.play_arrow,
-                                                size: 40,
-                                                color: Colors.white,
-                                              ),
-                                              Icon(
-                                                Icons.pause,
-                                                size: 40,
-                                                color: Colors.white,
-                                              ),
-                                            ],
-                                          ),
-                                        ]),
-                                  ),
-                                ],
+                              Container(
+                                alignment: Alignment.bottomCenter,
+                                margin: const EdgeInsets.only(left: 3),
+                                child: IconButton(
+                                  icon:
+                                      const Icon(CupertinoIcons.playpause_fill),
+                                  iconSize: 40,
+                                  onPressed: () => {},
+                                  color: clickWheelFg,
+                                ),
                               ),
                             ],
                           ))
@@ -228,12 +243,12 @@ class IPodState extends State<IPod> {
                     debugPrint("Select Pressed for page $selectedIndex");
                   },
                   child: Container(
-                    height: 100,
-                    width: 100,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white38,
-                    ),
+                    height: clickWheelSelectDiameter,
+                    width: clickWheelSelectDiameter,
+                    decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: clickWheelBg,
+                        border: Border.all(color: Colors.black)),
                   ),
                 ),
               ],
@@ -242,7 +257,7 @@ class IPodState extends State<IPod> {
           const Spacer(),
         ],
       ),
-    );
+    ));
   }
 
   void _panHandler(DragUpdateDetails d) {
@@ -251,10 +266,11 @@ class IPodState extends State<IPod> {
     bool panLeft = d.delta.dx <= 0.0;
     bool panRight = !panLeft;
     bool panDown = !panUp;
+    double radius = clickWheelDiameter / 2;
 
     /// Pan location on the wheel
-    bool onTop = d.localPosition.dy <= 150; // 150 == radius of circle
-    bool onLeftSide = d.localPosition.dx <= 150;
+    bool onTop = d.localPosition.dy <= radius; // 150 == radius of circle
+    bool onLeftSide = d.localPosition.dx <= radius;
     bool onRightSide = !onLeftSide;
     bool onBottom = !onTop;
 
@@ -320,14 +336,21 @@ class IpodUIRow extends StatelessWidget {
     Color itemBGColor = selected ? selectedColor : backColor;
     return SizedBox(
       child: Container(
-        height: 30,
+        height: 56,
         padding: const EdgeInsets.only(left: 10),
         color: itemBGColor,
-        child: Text(
-          text,
-          textAlign: TextAlign.left,
-          style: TextStyle(
-              fontSize: 24, color: selected ? Colors.white : Colors.black),
+        child: Row(
+          children: [
+            Text(
+              text,
+              textAlign: TextAlign.left,
+              style: TextStyle(
+                  fontFamily: "RedStar",
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  color: selected ? Colors.white : Colors.black),
+            ),
+          ],
         ),
       ),
     );
