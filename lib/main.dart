@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:assorted_layout_widgets/assorted_layout_widgets.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
@@ -46,9 +47,16 @@ class IPodState extends State<IPod> {
       ScrollOffsetController();
   final ScrollOffsetListener scrollOffsetListener =
       ScrollOffsetListener.create();
+  final List<String> mainMenu = [
+    "Music",
+    "Settings",
+  ];
+
   double currentPage = 0.0;
   int selectedIndex = 0;
-  int itemsInRootList = 5;
+  bool _listScrollEnabled = true;
+  Color backColor = const Color.fromARGB(255, 212, 231, 241);
+  Color selectedColor = Colors.black45;
 
   @override
   void initState() {
@@ -92,21 +100,22 @@ class IPodState extends State<IPod> {
               Container(
                 height: 20,
                 width: 374,
-                decoration: const BoxDecoration(color: Colors.grey),
+                decoration: BoxDecoration(color: backColor),
                 child: const Text(
                   "   ||                        Ipod Mini                        |=|",
                   style: TextStyle(
                       decoration: TextDecoration.underline,
                       fontWeight: FontWeight.bold,
-                      fontSize: 20),
+                      fontSize: 20,
+                      color: Colors.black),
                 ),
               ),
               Container(
                 height: 300,
                 width: 374,
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: Colors.grey,
+                decoration: BoxDecoration(
+                  color: backColor,
                 ),
                 child: ScrollablePositionedList.builder(
                   itemScrollController: _listViewController,
@@ -115,11 +124,13 @@ class IPodState extends State<IPod> {
                   scrollOffsetListener: scrollOffsetListener,
                   scrollDirection: Axis.vertical,
 
-                  itemCount: itemsInRootList, //Colors.accents.length,
+                  itemCount: mainMenu.length, //Colors.accents.length,
                   itemBuilder: (context, int currentIdx) {
                     return IpodUIRow(
-                      color: Colors.accents[currentIdx],
+                      backColor: backColor,
+                      selectedColor: selectedColor,
                       idx: currentIdx,
+                      text: mainMenu[currentIdx],
                       selectedIndex: selectedIndex,
                     );
                   },
@@ -214,7 +225,7 @@ class IPodState extends State<IPod> {
                 ),
                 GestureDetector(
                   onTap: () {
-                    debugPrint("Select Pressed");
+                    debugPrint("Select Pressed for page $selectedIndex");
                   },
                   child: Container(
                     height: 100,
@@ -260,52 +271,63 @@ class IPodState extends State<IPod> {
         (onTop && panLeft) || (onBottom && panRight) ? xChange : xChange * -1;
 
     // Total computed change with velocity
-    if (d.delta.distance > 0) {
-      double scrollOffsetChange = (horz + vert) * (d.delta.distance * 0.2);
+    if (d.delta.distance > 3) {
+      //double scrollOffsetChange = (horz + vert) * (d.delta.distance * 0.2);
 
-      // Move the page view scroller
-      int oldState = selectedIndex;
-      if ((horz + vert) < 0) {
-        selectedIndex = selectedIndex + 1 >= itemsInRootList
-            ? itemsInRootList - 1
-            : selectedIndex + 1;
-      } else {
-        selectedIndex = selectedIndex <= 0 ? 0 : selectedIndex - 1;
-      }
-      debugPrint("Scrolling to Index ${selectedIndex}");
-      if (oldState != selectedIndex) {
-        setState(() {
-          _listViewController.scrollTo(
-              index: selectedIndex,
-              duration: const Duration(milliseconds: 200));
-        });
+      debugPrint("Scrolling to Index $selectedIndex");
+      if (_listScrollEnabled) {
+        // Move the page view scroller
+        int oldState = selectedIndex;
+        if ((horz + vert) < 0) {
+          selectedIndex = selectedIndex + 1 >= mainMenu.length
+              ? mainMenu.length - 1
+              : selectedIndex + 1;
+        } else {
+          selectedIndex = selectedIndex <= 0 ? 0 : selectedIndex - 1;
+        }
+        if (oldState != selectedIndex) {
+          setState(() {
+            _listViewController.scrollTo(
+                index: selectedIndex,
+                duration: const Duration(milliseconds: 200));
+            _listScrollEnabled = false;
+          });
+
+          Timer(const Duration(milliseconds: 100),
+              () => setState(() => _listScrollEnabled = true));
+        }
       }
     }
   }
 }
 
 class IpodUIRow extends StatelessWidget {
-  final Color color;
+  final Color selectedColor;
+  final Color backColor;
   final int idx;
   final int selectedIndex;
+  final String text;
   const IpodUIRow(
       {super.key,
-      required this.color,
+      required this.selectedColor,
+      required this.backColor,
       required this.idx,
+      required this.text,
       required this.selectedIndex});
   @override
   Widget build(BuildContext context) {
     bool selected = idx == selectedIndex;
-    Color itemBGColor = selected ? Colors.red : Colors.grey;
+    Color itemBGColor = selected ? selectedColor : backColor;
     return SizedBox(
       child: Container(
         height: 30,
         padding: const EdgeInsets.only(left: 10),
         color: itemBGColor,
-        child: const Text(
-          "Music",
+        child: Text(
+          text,
           textAlign: TextAlign.left,
-          style: TextStyle(fontSize: 24),
+          style: TextStyle(
+              fontSize: 24, color: selected ? Colors.white : Colors.black),
         ),
       ),
     );
