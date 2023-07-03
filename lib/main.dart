@@ -1,4 +1,4 @@
-import 'dart:math';
+import 'dart:ffi';
 
 import 'package:flutter/material.dart';
 import 'package:assorted_layout_widgets/assorted_layout_widgets.dart';
@@ -39,7 +39,7 @@ class IPod extends StatefulWidget {
 }
 
 class IPodState extends State<IPod> {
-  final PageController _pageCtrl = PageController(viewportFraction: 0.6);
+  final PageController _pageCtrl = PageController(viewportFraction: 1);
 
   double currentPage = 0.0;
 
@@ -58,21 +58,64 @@ class IPodState extends State<IPod> {
     return SafeArea(
       child: Column(
         children: <Widget>[
-          Container(
-            height: 300,
-            color: Colors.black,
-            child: PageView.builder(
-              controller: _pageCtrl,
-              scrollDirection: Axis.horizontal,
-              itemCount: 9, //Colors.accents.length,
-              itemBuilder: (context, int currentIdx) {
-                return AlbumCard(
-                  color: Colors.accents[currentIdx],
-                  idx: currentIdx,
-                  currentPage: currentPage,
-                );
-              },
-            ),
+          // Cover Flow Container
+          // Container(
+          //   height: 300,
+          //   color: Colors.black,
+          //   child: PageView.builder(
+          //     controller: _pageCtrl,
+          //     scrollDirection: Axis.horizontal,
+          //     itemCount: 9, //Colors.accents.length,
+          //     itemBuilder: (context, int currentIdx) {
+          //       return AlbumCard(
+          //         color: Colors.accents[currentIdx],
+          //         idx: currentIdx,
+          //         currentPage: currentPage,
+          //       );
+          //     },
+          //   ),
+          // ),
+          // Ipod Mini UI
+          Container(height: 160, color: Colors.black),
+          const SizedBox(
+            height: 25,
+          ),
+          Column(
+            children: [
+              Container(
+                height: 20,
+                width: 374,
+                decoration: const BoxDecoration(color: Colors.grey),
+                child: const Text(
+                  "   ||                        Ipod Mini                        |=|",
+                  style: TextStyle(
+                      decoration: TextDecoration.underline,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20),
+                ),
+              ),
+              Container(
+                height: 300,
+                width: 374,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: Colors.grey,
+                ),
+                child: ListView.builder(
+                  controller: _pageCtrl,
+                  scrollDirection: Axis.vertical,
+
+                  itemCount: 5, //Colors.accents.length,
+                  itemBuilder: (context, int currentIdx) {
+                    return IpodUIRow(
+                      color: Colors.accents[currentIdx],
+                      idx: currentIdx,
+                      currentPage: currentPage,
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
           const Spacer(),
           Center(
@@ -165,12 +208,17 @@ class IPodState extends State<IPod> {
                     ]),
                   ),
                 ),
-                Container(
-                  height: 100,
-                  width: 100,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white38,
+                GestureDetector(
+                  onTap: () {
+                    debugPrint("Select Pressed");
+                  },
+                  child: Container(
+                    height: 100,
+                    width: 100,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white38,
+                    ),
                   ),
                 ),
               ],
@@ -212,6 +260,39 @@ class IPodState extends State<IPod> {
 
     // Move the page view scroller
     _pageCtrl.jumpTo(_pageCtrl.offset + scrollOffsetChange);
+  }
+}
+
+class IpodUIRow extends StatelessWidget {
+  final Color color;
+  final int idx;
+  final double currentPage;
+  const IpodUIRow(
+      {super.key,
+      required this.color,
+      required this.idx,
+      required this.currentPage});
+  @override
+  Widget build(BuildContext context) {
+    bool selected = idx == 0;
+    double relativePosition = idx - currentPage;
+    Color itemBGColor = selected ? Colors.blueGrey : Colors.grey;
+    return ListTile(
+      tileColor: itemBGColor,
+      visualDensity: const VisualDensity(vertical: -4),
+      contentPadding: EdgeInsets.symmetric(vertical: -10.0, horizontal: 20),
+      title: const Text(
+        "Music",
+        textAlign: TextAlign.left,
+        style: TextStyle(fontSize: 24),
+      ),
+      dense: true,
+      titleAlignment: ListTileTitleAlignment.center,
+      onTap: () {
+        // Set Selected Page
+        debugPrint("Selecting Page ${idx.toString()}");
+      },
+    );
   }
 }
 
