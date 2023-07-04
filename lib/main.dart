@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:assorted_layout_widgets/assorted_layout_widgets.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
+import 'package:spotify/spotify.dart';
 
 List images = [
   'https://i.pinimg.com/originals/8c/d0/d7/8cd0d722e65ccd87fffb844980977b3c.jpg',
@@ -52,29 +52,71 @@ class IPodState extends State<IPod> {
       ScrollOffsetController();
   final ScrollOffsetListener scrollOffsetListener =
       ScrollOffsetListener.create();
-  List<String> mainMenu = [
-    "Music                       >",
-    "Settings                  >",
-  ];
+  late ScrollController _scrollController = ScrollController();
+
+  Map<int, dynamic> menuOptionsList = {};
 
   double currentPage = 0.0;
   int selectedIndex = 0;
   double clickWheelDiameter = 280;
   double clickWheelSelectDiameter = 100;
   bool _listScrollEnabled = true;
+  int selectedPage = 0;
+  List<int> pageStack = [];
+  List<int> indexStack = [];
   Color backColor = const Color.fromARGB(255, 212, 231, 241);
   Color selectedColor = const Color.fromARGB(255, 66, 64, 64);
   Color clickWheelFg = const Color.fromARGB(255, 74, 187, 239);
   Color clickWheelBg = const Color.fromARGB(255, 228, 226, 226);
-
+  int albumNum = 0;
   @override
   void initState() {
     clickWheelSelectDiameter = clickWheelDiameter * .30;
+    menuOptionsList[0] = [
+      "Music                       >",
+      "Settings                  >"
+    ];
+    menuOptionsList[3] = ["Connect To Spotify", "Theme"];
+    final credentials = SpotifyApiCredentials("", "");
+    final spotify = SpotifyApi(credentials);
+    int previousSize = menuOptionsList[selectedPage].length;
+    List<String> newList = List.empty(growable: true);
+    List<String> newAlbums = List.empty(growable: true);
+
+    spotify.browse.getNewReleases().all().then((pages) => {
+          if (pages.firstOrNull == null)
+            {
+              print('Empty items'),
+            },
+          pages.forEach((item) async {
+            var tracks = await spotify.albums.getTracks(item.id!).all();
+            menuOptionsList[30 + albumNum] = List.empty(growable: true);
+            for (var track in tracks) {
+              menuOptionsList[30 + albumNum].add("${track.name}-${track.id}");
+            }
+            albumNum += 1;
+
+            newList.add("${item.artists![0].name}");
+            newAlbums.add(item.name!);
+            // artists.forEach((artist) {
+            //   menuOptionsList[selectedPage + 1]
+            //       .add(artist.name);
+            // }),
+          }),
+          if (previousSize != newList.length)
+            {
+              setState(() {
+                menuOptionsList[1] = newList;
+                menuOptionsList[2] = newAlbums;
+              })
+            }
+        });
     _pageCtrl.addListener(() {
       setState(() {
         currentPage = _pageCtrl.page!;
       });
     });
+    _scrollController.addListener(_handleScroll);
     super.initState();
   }
 
@@ -153,14 +195,13 @@ class IPodState extends State<IPod> {
                   scrollOffsetController: scrollOffsetController,
                   scrollOffsetListener: scrollOffsetListener,
                   scrollDirection: Axis.vertical,
-
-                  itemCount: mainMenu.length, //Colors.accents.length,
+                  itemCount: menuOptionsList[selectedPage].length,
                   itemBuilder: (context, int currentIdx) {
                     return IpodUIRow(
                       backColor: backColor,
                       selectedColor: selectedColor,
                       idx: currentIdx,
-                      text: mainMenu[currentIdx],
+                      text: menuOptionsList[selectedPage][currentIdx],
                       selectedIndex: selectedIndex,
                     );
                   },
@@ -183,16 +224,28 @@ class IPodState extends State<IPod> {
                       color: clickWheelBg,
                     ),
                     child: Stack(children: [
-                      Container(
-                        alignment: Alignment.topCenter,
-                        margin: const EdgeInsets.only(top: 20),
-                        child: Text(
-                          'MENU',
-                          style: TextStyle(
-                              fontFamily: "EpsySans",
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: clickWheelFg),
+                      GestureDetector(
+                        onTap: () => {
+                          setState(() {
+                            if (pageStack.isNotEmpty) {
+                              selectedPage = pageStack.last;
+                              pageStack.removeLast();
+                              selectedIndex = indexStack.last;
+                              indexStack.removeLast();
+                            }
+                          })
+                        },
+                        child: Container(
+                          alignment: Alignment.topCenter,
+                          margin: const EdgeInsets.only(top: 20),
+                          child: Text(
+                            'MENU',
+                            style: TextStyle(
+                                fontFamily: "EpsySans",
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: clickWheelFg),
+                          ),
                         ),
                       ),
                       Container(
@@ -241,6 +294,35 @@ class IPodState extends State<IPod> {
                 GestureDetector(
                   onTap: () {
                     debugPrint("Select Pressed for page $selectedIndex");
+                    if (selectedPage == 0 || selectedPage == 1) {
+                      pageStack.add(selectedPage);
+                      indexStack.add(selectedIndex);
+                    }
+                    setState(() {
+                      if (selectedPage == 0) {
+                        switch (selectedIndex) {
+                          case 0:
+                            selectedPage = 1; // Albums
+                          case 1:
+                            selectedPage = 3; // Settings
+                        }
+                        selectedIndex = 0;
+                      } else if (selectedPage == 1) {
+                        selectedPage = 30 + selectedIndex; // Album Tracks
+                        selectedIndex = 0;
+                      } else if (selectedPage >= 30) {
+                        String trackName = menuOptionsList[selectedPage]
+                                [selectedIndex]
+                            .split('-')[0];
+                        String trackID = menuOptionsList[selectedPage]
+                                [selectedIndex]
+                            .split('-')[1];
+                        print("Playing Track $trackName with ID $trackID");
+                      }
+                      print("set Selected page to $selectedPage");
+                    });
+
+                    debugPrint("");
                   },
                   child: Container(
                     height: clickWheelSelectDiameter,
@@ -259,6 +341,8 @@ class IPodState extends State<IPod> {
       ),
     ));
   }
+
+  _handleScroll() {}
 
   void _panHandler(DragUpdateDetails d) {
     /// Pan movements
@@ -295,9 +379,10 @@ class IPodState extends State<IPod> {
         // Move the page view scroller
         int oldState = selectedIndex;
         if ((horz + vert) < 0) {
-          selectedIndex = selectedIndex + 1 >= mainMenu.length
-              ? mainMenu.length - 1
-              : selectedIndex + 1;
+          selectedIndex =
+              selectedIndex + 1 >= menuOptionsList[selectedPage].length
+                  ? menuOptionsList[selectedPage].length - 1
+                  : selectedIndex + 1;
         } else {
           selectedIndex = selectedIndex <= 0 ? 0 : selectedIndex - 1;
         }
@@ -341,14 +426,17 @@ class IpodUIRow extends StatelessWidget {
         color: itemBGColor,
         child: Row(
           children: [
-            Text(
-              text,
-              textAlign: TextAlign.left,
-              style: TextStyle(
-                  fontFamily: "RedStar",
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                  color: selected ? Colors.white : Colors.black),
+            Flexible(
+              child: Text(
+                text.split("-")[0],
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.left,
+                style: TextStyle(
+                    fontFamily: "RedStar",
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: selected ? Colors.white : Colors.black),
+              ),
             ),
           ],
         ),
